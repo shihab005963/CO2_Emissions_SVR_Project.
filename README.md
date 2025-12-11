@@ -1,5 +1,5 @@
 # CO2_Emissions_SVR_Project.
-# CO₂ Emission Prediction with SVR
+
 
 This project applies **Support Vector Regression (SVR)** to make a prediction of a vehicle’s CO₂ emissions in grams per kilometer, based on input variables like engine size, fuel efficiency, and vehicle type, among others.
 
