@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CO2 Emissions Prediction with SVR</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 80px 20px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            position: relative;
+            overflow: hidden;
+            animation: slideDown 1s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveBackground 20s linear infinite;
+            top: -50%;
+            left: -50%;
+        }
+
+        @keyframes moveBackground {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        h1 {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 2px 2px 4px rgba(0,0,0,0.3), 0 0 10px rgba(255,255,255,0.3); }
+            to { text-shadow: 2px 2px 4px rgba(0,0,0,0.3), 0 0 20px rgba(255,255,255,0.6); }
+        }
+
+        .subtitle {
+            font-size: 1.3em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section {
+            background: white;
+            margin: 30px 0;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            animation: fadeInUp 0.8s ease-out;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            border-left: 5px solid #667eea;
+            padding-left: 20px;
+            animation: slideInLeft 0.6s ease-out;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        h3 {
+            color: #764ba2;
+            font-size: 1.8em;
+            margin: 30px 0 15px 0;
+            position: relative;
+            display: inline-block;
+        }
+
+        h3::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #764ba2;
+            transition: width 0.3s ease;
+        }
+
+        .section:hover h3::after {
+            width: 100%;
+        }
+
+        p {
+            line-height: 1.8;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            color: #555;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin: 20px 0;
+        }
+
+        .feature-list li {
+            padding: 15px;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            animation: slideInRight 0.5s ease-out;
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        .feature-list li:hover {
+            transform: translateX(10px);
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .metric-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .metric {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            transition: transform 0.3s ease;
+            animation: popIn 0.6s ease-out;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .metric:hover {
+            transform: scale(1.05) rotate(2deg);
+        }
+
+        @keyframes popIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .metric-label {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .graph-container {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            text-align: center;
+            animation: zoomIn 0.8s ease-out;
+        }
+
+        @keyframes zoomIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .graph-placeholder {
+            width: 100%;
+            max-width: 800px;
+            height: 400px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #e0e7ff 0%, #cfd9ff 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            color: #667eea;
+            font-weight: bold;
+            border: 2px dashed #667eea;
+        }
+
+        .intro-text {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border-left: 5px solid #ff6b6b;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .future-work-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .future-item {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 25px;
+            border-radius: 15px;
+            transition: transform 0.3s ease;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .future-item:hover {
+            transform: translateY(-10px) rotate(1deg);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .conclusion {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 40px;
+            animation: bounceIn 1s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: white;
+            margin-top: 50px;
+        }
+
+        .scroll-indicator {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            animation: bounce 2s infinite;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .scroll-indicator:hover {
+            transform: scale(1.2);
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        /* Floating particles */
+        .particle {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 15s infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Animated wave background */
+        .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="rgba(255,255,255,0.1)"/></svg>');
+            background-size: cover;
+            animation: wave 10s linear infinite;
+        }
+
+        @keyframes wave {
+            0% { background-position: 0 0; }
+            100% { background-position: 1200px 0; }
+        }
+
+        /* Data flow animation */
+        .data-flow {
+            position: absolute;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.3), transparent);
+            animation: dataFlow 3s infinite;
+        }
+
+        @keyframes dataFlow {
+            0% { right: -100%; }
+            100% { right: 100%; }
+        }
+
+        /* Rotating border animation */
+        .rotating-border {
+            position: relative;
+        }
+
+        .rotating-border::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #4facfe);
+            border-radius: 20px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s;
+            background-size: 400% 400%;
+            animation: gradientRotate 3s ease infinite;
+        }
+
+        .rotating-border:hover::after {
+            opacity: 1;
+        }
+
+        @keyframes gradientRotate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Number counter animation */
+        .counter {
+            animation: countUp 2s ease-out;
+        }
+
+        @keyframes countUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Typewriter effect */
+        .typewriter {
+            overflow: hidden;
+            border-right: 3px solid white;
+            white-space: nowrap;
+            animation: typing 3s steps(40, end), blink 0.75s step-end infinite;
+            display: inline-block;
+        }
+
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        @keyframes blink {
+            from, to { border-color: transparent; }
+            50% { border-color: white; }
+        }
+
+        /* Shake animation for important elements */
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        /* Ripple effect */
+        .ripple {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ripple::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            animation: rippleEffect 1.5s infinite;
+        }
+
+        @keyframes rippleEffect {
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+            100% {
+                width: 300px;
+                height: 300px;
+                opacity: 0;
+            }
+        }
+
+        /* Loading bar animation */
+        .progress-bar {
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            animation: loading 2s ease-in-out infinite;
+        }
+
+        @keyframes loading {
+            0% { width: 0%; }
+            50% { width: 100%; }
+            100% { width: 0%; }
+        }
+
+        /* 3D flip animation */
+        .flip-card {
+            perspective: 1000px;
+        }
+
+        .flip-card:hover .flip-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating particles -->
+    <div class="particle" style="left: 10%; animation-delay: 0s;"></div>
+    <div class="particle" style="left: 20%; animation-delay: 2s;"></div>
+    <div class="particle" style="left: 30%; animation-delay: 4s;"></div>
+    <div class="particle" style="left: 40%; animation-delay: 1s;"></div>
+    <div class="particle" style="left: 50%; animation-delay: 3s;"></div>
+    <div class="particle" style="left: 60%; animation-delay: 5s;"></div>
+    <div class="particle" style="left: 70%; animation-delay: 2.5s;"></div>
+    <div class="particle" style="left: 80%; animation-delay: 4.5s;"></div>
+    <div class="particle" style="left: 90%; animation-delay: 1.5s;"></div>
+
+    <header>
+        <div class="wave"></div>
+        <div class="container">
+            <h1 class="ripple">🌍 CO2 Emissions Prediction</h1>
+            <p class="subtitle typewriter">Using Support Vector Regression for Environmental Sustainability</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="section rotating-border">
+            <div class="intro-text">
+                <p>In this project, I use Support Vector Regression (SVR) to predict CO2 emissions from various vehicle features such as engine size, fuel consumption, and other relevant attributes. Predicting CO2 emissions is of immense importance in the context of environmental sustainability, as vehicles are among the largest contributors to greenhouse gases.</p>
+                <p>Accurate prediction of CO2 emissions can be instrumental in guiding regulatory frameworks, improving fuel efficiency in vehicles, and ultimately reducing the environmental footprint of the automotive industry. This project leverages machine learning techniques to forecast emissions, with a focus on understanding the relationships between vehicle characteristics and CO2 emissions.</p>
+            </div>
+        </div>
+
+        <div class="section rotating-border">
+            <div class="data-flow"></div>
+            <h2>1. Dataset Overview</h2>
+            <p>The dataset used in this project contains multiple features that are expected to have an impact on CO2 emissions:</p>
+            <ul class="feature-list">
+                <li><strong>Engine Size:</strong> The size of the vehicle's engine, measured in liters. It is one of the most influential features, as larger engines typically consume more fuel and produce higher emissions.</li>
+                <li><strong>Fuel Consumption:</strong> The rate at which the vehicle consumes fuel, given as liters per 100 kilometers (L/100 km). This is a key feature in predicting CO2 emissions, as more fuel consumption usually leads to higher CO2 emissions.</li>
+                <li><strong>Vehicle Class:</strong> This refers to the category of the vehicle, such as compact, sedan, SUV, etc. Vehicle class can indirectly influence CO2 emissions, as larger vehicles tend to consume more fuel and emit more CO2.</li>
+                <li><strong>CO2 Emissions:</strong> The target variable, representing CO2 emissions in grams per kilometer (g/km). This is the outcome I aim to predict, based on the input features.</li>
+            </ul>
+            <p>Additionally, some features like fuel type (whether the vehicle runs on gasoline, diesel, or electric) were not available in the dataset, but incorporating such features could provide a more holistic understanding of vehicle emissions.</p>
+        </div>
+
+        <div class="section rotating-border">
+            <div class="data-flow"></div>
+            <h2>2. Exploratory Data Analysis (EDA)</h2>
+            <p>In this section, I explore the dataset to identify patterns, trends, and correlations between the features and the target variable (CO2 emissions). EDA is essential in machine learning to understand the structure of data, identify outliers, and determine the relationships between variables.</p>
+
+            <h3>2.1 Distribution of CO2 Emissions</h3>
+            <div class="graph-container">
+                <div class="graph-placeholder">
+                    📊 Replace with: media/image1.png<br>
+                    (CO2 Emissions Distribution Histogram)
+                </div>
+            </div>
+            <p>The histogram reveals that the distribution of CO2 emissions is right-skewed, with the majority of vehicles emitting relatively low amounts of CO2. This suggests that the dataset consists primarily of more fuel-efficient vehicles, with only a small number of high-emission vehicles.</p>
+
+            <h3>2.2 Boxplots for Key Features</h3>
+            <div class="graph-container">
+                <div class="graph-placeholder">
+                    📊 Replace with: media/image2.png<br>
+                    (Boxplots for Key Features)
+                </div>
+            </div>
+            <p>The boxplots provide valuable insights into how different features like engine size and fuel consumption are distributed. Vehicles with larger engines tend to have higher CO2 emissions. The presence of outliers suggests that some vehicles with very large engines or high fuel consumption rates are extreme cases.</p>
+
+            <h3>2.3 Pairplot of Features and CO2 Emissions</h3>
+            <div class="graph-container">
+                <div class="graph-placeholder">
+                    📊 Replace with: media/image3.png<br>
+                    (Pairplot of Features)
+                </div>
+            </div>
+            <p>From the pairplot, it is evident that engine size and fuel consumption have the strongest correlation with CO2 emissions. These features exhibit a linear relationship with emissions, suggesting that larger vehicles with greater fuel consumption tend to produce more CO2.</p>
+
+            <h3>2.4 Correlation Heatmap</h3>
+            <div class="graph-container">
+                <div class="graph-placeholder">
+                    📊 Replace with: media/image4.png<br>
+                    (Correlation Heatmap)
+                </div>
+            </div>
+            <p>The heatmap confirms that engine size and fuel consumption are strongly correlated with CO2 emissions. These features have high positive correlations, meaning that as engine size and fuel consumption increase, CO2 emissions also increase.</p>
+        </div>
+
+        <div class="section rotating-border">
+            <div class="data-flow"></div>
+            <h2>3. Methodology</h2>
+            <p>In this section, I describe the methodology I used for predicting CO2 emissions using Support Vector Regression (SVR). SVR is a powerful non-linear regression technique that is particularly effective when relationships between the input features and target variable are non-linear.</p>
+
+            <h3>3.1 Data Preprocessing</h3>
+            <p>Data preprocessing is an essential step in preparing the dataset for machine learning models. I first scaled the numerical features using StandardScaler to ensure that each feature had a mean of 0 and a standard deviation of 1. Scaling is crucial for SVR, as the model is sensitive to the scale of the input features. In addition to scaling, I used OneHotEncoder to convert categorical variables, such as vehicle class, into binary variables.</p>
+
+            <h3>3.2 Model Setup</h3>
+            <p>I used the SVR model with a Radial Basis Function (RBF) kernel because it is well-suited for capturing non-linear relationships in the data. The RBF kernel transforms the feature space to allow the model to learn complex patterns. Additionally, I tuned the model using GridSearchCV to find the optimal values for the regularization parameter C and epsilon.</p>
+        </div>
+
+        <div class="section rotating-border">
+            <div class="data-flow"></div>
+            <h2>4. Results and Discussion</h2>
+            <p>In this section, I evaluate the model's performance using metrics like R-squared, Mean Absolute Error (MAE), and Mean Squared Error (MSE). These metrics give insight into the model's predictive accuracy and its ability to generalize.</p>
+
+            <h3>4.1 Model Performance Metrics</h3>
+            <div class="metric-box">
+                <div class="metric ripple">
+                    <div class="metric-label">R-squared</div>
+                    <div class="metric-value counter">0.85</div>
+                </div>
+                <div class="metric ripple">
+                    <div class="metric-label">Mean Absolute Error</div>
+                    <div class="metric-value counter">22.5 g/km</div>
+                </div>
+                <div class="metric ripple">
+                    <div class="metric-label">Mean Squared Error</div>
+                    <div class="metric-value counter">600</div>
+                </div>
+            </div>
+            <p>The R-squared value of 0.85 indicates that 85% of the variance in CO2 emissions is explained by the model, which is a strong result for this type of regression task. The MAE of 22.5 g/km means that, on average, the model's predictions deviate from the true values by 22.5 grams per kilometer.</p>
+
+            <h3>4.2 Residuals vs Predicted CO2 Emissions</h3>
+            <div class="graph-container">
+                <div class="graph-placeholder">
+                    📊 Replace with: media/image5.png<br>
+                    (Residuals vs Predicted Plot)
+                </div>
+            </div>
+            <p>The residuals plot shows that there is no obvious pattern in the residuals, suggesting that the model has learned the underlying relationships in the data well. Ideally, the residuals should be randomly distributed around zero.</p>
+
+            <h3>4.3 Feature Importance Based on Permutation Importance</h3>
+            <div class="graph-container">
+                <div class="graph-placeholder">
+                    📊 Replace with: media/image6.png<br>
+                    (Feature Importance Plot)
+                </div>
+            </div>
+
+            <h3>4.4 Actual vs Predicted CO2 Emissions (Tuned Model)</h3>
+            <div class="graph-container">
+                <div class="graph-placeholder">
+                    📊 Replace with: media/image7.png<br>
+                    (Actual vs Predicted Plot)
+                </div>
+            </div>
+
+            <h3>4.5 Learning Curve for SVR Model</h3>
+            <div class="graph-container">
+                <div class="graph-placeholder">
+                    📊 Replace with: media/image8.png<br>
+                    (Learning Curve)
+                </div>
+            </div>
+        </div>
+
+        <div class="section rotating-border">
+            <div class="data-flow"></div>
+            <h2>5. Future Work</h2>
+            <p>While this project demonstrates a successful application of Support Vector Regression (SVR) for predicting CO2 emissions, there are several avenues for future work and improvements:</p>
+
+            <div class="future-work-grid">
+                <div class="future-item">
+                    <h3>5.1 Exploring Additional Features</h3>
+                    <p>Incorporate more features like vehicle age, weight, and fuel type. Electric vehicles typically have much lower CO2 emissions, and adding these features would make the model more robust.</p>
+                </div>
+
+                <div class="future-item">
+                    <h3>5.2 Hyperparameter Tuning</h3>
+                    <p>Explore advanced techniques like RandomizedSearchCV or Bayesian Optimization to efficiently explore the hyperparameter space and reduce computational cost.</p>
+                </div>
+
+                <div class="future-item">
+                    <h3>5.3 Comparing with Other Models</h3>
+                    <p>Compare SVR with other machine learning models such as Random Forest Regressor, Gradient Boosting, or XGBoost to see if they yield better results in terms of accuracy and generalization.</p>
+                </div>
+
+                <div class="future-item">
+                    <h3>5.4 Handling Imbalanced Data</h3>
+                    <p>Use techniques like SMOTE (Synthetic Minority Over-sampling Technique) to balance the dataset and improve model performance for rare, high-emission vehicles.</p>
+                </div>
+
+                <div class="future-item">
+                    <h3>5.5 Deployment of the Model</h3>
+                    <p>Deploy the model as a web application to make real-time predictions. This would involve integrating the model with a backend API and building a front-end interface for users.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section conclusion">
+            <h2>6. Conclusion</h2>
+            <p>In this project, I demonstrated the use of Support Vector Regression (SVR) for predicting CO2 emissions. The model performed well, achieving an R-squared value of 0.85 and a reasonable Mean Absolute Error (MAE). The key features impacting CO2 emissions included engine size and fuel consumption.</p>
+            <p>The performance of the model suggests that SVR is a suitable technique for this task, but there is still room for improvement. By incorporating additional features and exploring alternative models, the accuracy of predictions can be further enhanced.</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>🌱 Building a sustainable future through machine learning 🌱</p>
+    </footer>
+
+    <div class="scroll-indicator" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+        ⬆️
+    </div>
+</body>
+</html>
